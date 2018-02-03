@@ -3,8 +3,8 @@ title: 'Machine Learning: Course Project'
 author: "Jeremy Peters"
 date: "February 6, 2018"
 output:
-  pdf_document: default
   html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -41,15 +41,6 @@ dim(dfTest)
 #summary(dfTrain)
 summary(dfTrain$classe)
 
-
-
-#Calculate missing value impact
-#NAimpact <- unique(apply(dfTrain, 2,function(x){sum(is.na(x))}))
-#NAimpactNum <- dim(dfTrain)[1]-NAimpact[2]
-#non_NA <- NAimpactNum/dim(data)[1]
-#sprintf("%1.2f%%", 100*non_NA)
-
-
 ```
 
 ### Data Processing: Cleaning and Preparation
@@ -75,7 +66,6 @@ nzVar
 dfTrain <- dfTrain[, !nzVar$nzv]
 dfTest <- dfTest[, !nzVar$nzv]
 dim(dfTrain)
-#names(dfTrain)
 
 dfInTrain <- createDataPartition(dfTrain$classe, p = 0.75, list = FALSE)
 dfPredict <- dfTrain[dfInTrain, ]
