@@ -3,8 +3,8 @@ title: 'Machine Learning: Course Project'
 author: "Jeremy Peters"
 date: "February 6, 2018"
 output:
-  html_document: default
   pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -14,9 +14,7 @@ require("knitr")
 ```
 
 ### Executive Summary
-Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. In a study, Six young health participants were asked to perform one set of 10 repetitions of the Unilateral Dumbbell Biceps Curl in five different fashions: exactly according to the specification (Class A), throwing the elbows to the front (Class B), lifting the dumbbell only halfway (Class C), lowering the dumbbell only halfway (Class D) and throwing the hips to the front (Class E).Only Class A corresponds to correct performance. The objective of this  project is to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants to build a machine learning algorithm to predict the manner/class type in which an exerise was completed. More information  about the study and data set can be found in the section on the Weight Lifting Exercise Dataset at the following URL: http://groupware.les.inf.puc-rio.br/har
-* The training data for this project was download from the following URL: https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
-* The test data for this project was download from the following URL: https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. In a study, Six young health participants were asked to perform one set of 10 repetitions of the Unilateral Dumbbell Biceps Curl in five different fashions: exactly according to the specification (Class A), throwing the elbows to the front (Class B), lifting the dumbbell only halfway (Class C), lowering the dumbbell only halfway (Class D) and throwing the hips to the front (Class E).Only Class A corresponds to correct performance. The objective of this  project is to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants to build a machine learning algorithm to predict the manner/class type in which an exerise was completed. More information  about the study and data set can be found in the section on the Weight Lifting Exercise Dataset at the following URL: http://groupware.les.inf.puc-rio.br/har. The training data for this project was download from the following URL: https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv. The test data for this project was download from the following URL: https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
 
 ### Exploratory Data Analysis
 * Read  the Training and Testing CSV  files in table format, specify types of missing values (NA, empty strings and div0), and create  data frames 
