@@ -1,0 +1,124 @@
+---
+title: 'Machine Learning: Course Project'
+author: "Jeremy Peters"
+date: "February 6, 2018"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+require("knitr")
+#opts_knit$set(root.dir = "C:/JP Docs/Data Science Certification/WD/")
+```
+
+### Executive Summary
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. In a study, Six young health participants were asked to perform one set of 10 repetitions of the Unilateral Dumbbell Biceps Curl in five different fashions: exactly according to the specification (Class A), throwing the elbows to the front (Class B), lifting the dumbbell only halfway (Class C), lowering the dumbbell only halfway (Class D) and throwing the hips to the front (Class E).Only Class A corresponds to correct performance. The objective of this  project is to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants to build a machine learning algorithm to predict the manner/class type in which an exerise was completed. More information  about the study and data set can be found in the section on the Weight Lifting Exercise Dataset at the following URL: http://groupware.les.inf.puc-rio.br/har
+* The training data for this project was download from the following URL: https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+* The test data for this project was download from the following URL: https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+
+### Exploratory Data Analysis
+* Read  the Training and Testing CSV  files in table format, specify types of missing values (NA, empty strings and div0), and create  data frames 
+* Display the internal structure of an R object and generate summary statistics of the training dataset
+* The Training dataset contains 160 variables and 19,622 records
+* The Testing  dataset contains 160 variables and 20 records
+```{r dataanalysis,  echo  =  TRUE}
+
+# Load the required r packages
+library(caret)
+library(randomForest)
+
+dfTrain <- read.csv("pml-training.csv", header = TRUE, na.strings=c("NA","#DIV/0!",""))
+dfTest <- read.csv("pml-testing.csv", header = TRUE, na.strings=c("NA","#DIV/0!",""))
+
+# Get variable names
+names(dfTrain)
+
+str(dfTrain)
+dim(dfTest)
+
+#summary(dfTrain)
+summary(dfTrain$classe)
+
+
+
+#Calculate missing value impact
+#NAimpact <- unique(apply(dfTrain, 2,function(x){sum(is.na(x))}))
+#NAimpactNum <- dim(dfTrain)[1]-NAimpact[2]
+#non_NA <- NAimpactNum/dim(data)[1]
+#sprintf("%1.2f%%", 100*non_NA)
+
+
+```
+
+### Data Processing: Cleaning and Preparation
+* Remove the first seven descriptive variables/fields (X/Id, user_name,raw_timestamp_part_1, raw_timestamp_part_2, cvtd_timestamp, new_window, num_window) from both data sets that will not help predict the manner in which an exercise was completed.
+* Remove the variables/fields from the data set that contain missing values
+* Remove Near Zero Variance Variables 
+* The resulting Training and Testing datasets both have 53 variables/fields the last of which is the classe variable/field 
+* Split the cleaned training data set  into a training set (75%) that will be used for prediction and a testing/validation set (25%) that will be used to determine  out-of-sample errors
+```{r dataprocessing,  echo  =  TRUE}
+
+dfTrain <- dfTrain[, -c(1:7)]
+dfTest <- dfTest[, -c(1:7)]
+
+
+dfTrain <- dfTrain[, colSums(is.na(dfTrain)) == 0]
+dfTest <- dfTest[, colSums(is.na(dfTest)) == 0]
+
+#Check if their are Near Zero Variance Variables to remove
+nzVar <- nearZeroVar(dfTrain, saveMetrics = TRUE)
+nzVar
+#dim(nzVar)
+#head(nzVar, 60)
+dfTrain <- dfTrain[, !nzVar$nzv]
+dfTest <- dfTest[, !nzVar$nzv]
+dim(dfTrain)
+#names(dfTrain)
+
+dfInTrain <- createDataPartition(dfTrain$classe, p = 0.75, list = FALSE)
+dfPredict <- dfTrain[dfInTrain, ]
+dfValidate <- dfTrain[-dfInTrain, ]
+
+```
+
+
+### Model Fitting
+* set.seed for pseudo-random number generation and ensure reproducible results
+* A  predictive model is fitted  to predict the manner/class type in which an exerise was completed using Random Forest algorithm 
+* Random Forest algorithm is selected here because it is one of the most accurate learning algorithms available and  produces highly accurate classifier for many datasets. It provides estimates of what variables are important in the classification and handles  correlated covariates & outliers.
+* A 5-fold cross validation (cv) resampling method is applied to the algorithm  
+* The results are predicted using the validation data set 
+* The results are compared using a confusionMatrix:  a cross-tabulation of observed and predicted classes with associated statistics.
+* The accuracy/overall agreement rate and Kappa are computed 
+```{r modelfitting,  echo  =  TRUE}
+
+set.seed(25)
+fitControl <- trainControl(method='cv', number = 5)
+modFitRf<- train(classe ~ ., data = dfPredict, method = "rf", trControl = fitControl)
+#print(modFitRf)
+modFitRf
+
+predictRf <- predict(modFitRf, dfValidate)
+
+confusionMatrix(dfValidate$classe, predictRf)
+
+
+accuracy <- postResample(predictRf, dfValidate$classe)
+accuracy
+
+```
+
+### Conclusions & Test Data Set Prediction
+* The Random Forest algoithm performed well with an accuracy of 0.995. The expected out-of-sample error rate is estimated at 0.005 (1 - accuracy). 
+* Therefore, the Random Forest predictive model is applied to the 20 test cases available in the test data set.  We can expected that few of the test samples will be misclassified based on the  accurate shown on the cross-validation data set.
+* 1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 
+* B  A  B  A  A  E  D  B  A  A  B  C  B  A  E  E  A  B  B  B 
+
+```{r testdatasetprediction,  echo  =  TRUE}
+
+predictRf <- predict(modFitRf, dfTest)
+predictRf
+```
+ 
