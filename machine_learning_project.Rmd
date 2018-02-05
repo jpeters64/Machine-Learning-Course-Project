@@ -1,7 +1,7 @@
 ---
 title: 'Machine Learning: Course Project'
 author: "Jeremy Peters"
-date: "February 6, 2018"
+date: "February 5, 2018"
 output:
   pdf_document: default
   html_document: default
@@ -14,18 +14,23 @@ require("knitr")
 ```
 
 ### Executive Summary
-Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. In a study, Six young health participants were asked to perform one set of 10 repetitions of the Unilateral Dumbbell Biceps Curl in five different fashions: exactly according to the specification (Class A), throwing the elbows to the front (Class B), lifting the dumbbell only halfway (Class C), lowering the dumbbell only halfway (Class D) and throwing the hips to the front (Class E).Only Class A corresponds to correct performance. The objective of this  project is to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants to build a machine learning algorithm to predict the manner/class type in which an exerise was completed. More information  about the study and data set can be found in the section on the Weight Lifting Exercise Dataset at the following URL: http://groupware.les.inf.puc-rio.br/har. The training data for this project was download from the following URL: https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv. The test data for this project was download from the following URL: https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. In a study, Six young health participants were asked to perform one set of 10 repetitions of the Unilateral Dumbbell Biceps Curl in five different fashions: exactly according to the specification (Class A), throwing the elbows to the front (Class B), lifting the dumbbell only halfway (Class C), lowering the dumbbell only halfway (Class D) and throwing the hips to the front (Class E).Only Class A corresponds to correct performance. The objective of this  project is to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants to build a machine learning algorithm to predict the manner/class type in which an exerise was completed. More information  about the study and data set can be found in the section on the Weight Lifting Exercise Dataset at the following URL: http://groupware.les.inf.puc-rio.br/har. 
 
 ### Exploratory Data Analysis
+* The training data for this project was download from the following URL: https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv 
+* The test data for this project was download from the following URL: https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+* Load the required r packages: caret, gbm and randomForest
 * Read  the Training and Testing CSV  files in table format, specify types of missing values (NA, empty strings and div0), and create  data frames 
 * Display the internal structure of an R object and generate summary statistics of the training dataset
 * The Training dataset contains 160 variables and 19,622 records
 * The Testing  dataset contains 160 variables and 20 records
+* classe is the outcome factor variable with 5 levels: Class A, Class B, Class C, Class D, and Class E
 ```{r dataanalysis,  echo  =  TRUE}
 
 # Load the required r packages
 library(caret)
 library(randomForest)
+library(gbm)
 
 dfTrain <- read.csv("pml-training.csv", header = TRUE, na.strings=c("NA","#DIV/0!",""))
 dfTest <- read.csv("pml-testing.csv", header = TRUE, na.strings=c("NA","#DIV/0!",""))
@@ -45,8 +50,8 @@ summary(dfTrain$classe)
 * Remove the first seven descriptive variables/fields (X/Id, user_name,raw_timestamp_part_1, raw_timestamp_part_2, cvtd_timestamp, new_window, num_window) from both data sets that will not help predict the manner in which an exercise was completed.
 * Remove the variables/fields from the data set that contain missing values
 * Remove Near Zero Variance Variables 
-* The resulting Training and Testing datasets both have 53 variables/fields the last of which is the classe variable/field 
-* Split the cleaned training data set  into a training set (75%) that will be used for prediction and a testing/validation set (25%) that will be used to determine  out-of-sample errors
+* The resulting Training and Testing datasets both have 53 variables/fields the last of which is the classe variable/field
+* Cross-validation is performed by splitting the cleaned training data set  into a training data set (75%) that will be used for prediction and a testing/validation data set (25%) that will be used to determine  out-of-sample errors
 ```{r dataprocessing,  echo  =  TRUE}
 
 dfTrain <- dfTrain[, -c(1:7)]
@@ -56,11 +61,9 @@ dfTest <- dfTest[, -c(1:7)]
 dfTrain <- dfTrain[, colSums(is.na(dfTrain)) == 0]
 dfTest <- dfTest[, colSums(is.na(dfTest)) == 0]
 
-#Check if their are Near Zero Variance Variables to remove
+#Remove any Near Zero Variance Variables 
 nzVar <- nearZeroVar(dfTrain, saveMetrics = TRUE)
 nzVar
-#dim(nzVar)
-#head(nzVar, 60)
 dfTrain <- dfTrain[, !nzVar$nzv]
 dfTest <- dfTest[, !nzVar$nzv]
 dim(dfTrain)
@@ -73,34 +76,37 @@ dfValidate <- dfTrain[-dfInTrain, ]
 
 
 ### Model Fitting
-* set.seed for pseudo-random number generation and ensure reproducible results
-* A  predictive model is fitted  to predict the manner/class type in which an exerise was completed using Random Forest algorithm 
-* Random Forest algorithm is selected here because it is one of the most accurate learning algorithms available and  produces highly accurate classifier for many datasets. It provides estimates of what variables are important in the classification and handles  correlated covariates & outliers.
-* A 5-fold cross validation (cv) resampling method is applied to the algorithm  
+* Random Forest and Stochastic Gradient Boosting Predictive models are fitted  to predict the manner/class type in which an exerise was completed because they are usually the top performing algorithms. see Appendix for Stochastic Gradient Boosting model fitting 
+* set.seed for pseudo-random number generation in order to  ensure reproducible results
+* Prediction evaluation will maximimize accuracy and minimize out-of sample error
+* Random Forest algorithm  was selected  because it is one of the most accurate learning algorithms available and determines the features that are important for classification for many datasets. It works well with a large number of variables where the interactions between variables are unknown. It provides estimates of what variables are important in the classification and handles  correlated covariates & outliers.
+* 10-fold cross validation (cv) resampling method is applied to the Random Forest algorithm by default
 * The results are predicted using the validation data set 
 * The results are compared using a confusionMatrix:  a cross-tabulation of observed and predicted classes with associated statistics.
 * The accuracy/overall agreement rate and Kappa are computed 
+* The importance of Top 20 Variables are calculated and plotted
 ```{r modelfitting,  echo  =  TRUE}
 
 set.seed(25)
-fitControl <- trainControl(method='cv', number = 5)
-modFitRf<- train(classe ~ ., data = dfPredict, method = "rf", trControl = fitControl)
-#print(modFitRf)
+
+#fitControl <- trainControl(method='cv', number = 10)
+#modFitRf<- train(classe ~ ., data = dfPredict, method = "rf", trControl = fitControl)
+modFitRf<- train(classe ~ ., data = dfPredict, method = "rf")
 modFitRf
-
 predictRf <- predict(modFitRf, dfValidate)
-
 confusionMatrix(dfValidate$classe, predictRf)
+accuracy1 <- postResample(predictRf, dfValidate$classe)
+accuracy1
 
-
-accuracy <- postResample(predictRf, dfValidate$classe)
-accuracy
+#Calculate the variable importance
+modFitRfvarImp <- varImp(modFitRf)
+plot(modFitRfvarImp, main = "Importance of Top 20 Variables", top = 20)
 
 ```
 
 ### Conclusions & Test Data Set Prediction
-* The Random Forest algoithm performed well with an accuracy of 0.995. The expected out-of-sample error rate is estimated at 0.005 (1 - accuracy). 
-* Therefore, the Random Forest predictive model is applied to the 20 test cases available in the test data set.  We can expected that few of the test samples will be misclassified based on the  accurate shown on the cross-validation data set.
+* The Random Forest algorithm performed very well and gave the best result with an accuracy of 0.994 where accuracy is the proportion of correctly classified observations in the cross-validation test data set. The expected out-of-sample error rate is estimated at 0.006 (1 - accuracy) to represent the the expected misclassified observations in the test data set.
+* Therefore, the Random Forest predictive model is applied to the 20 test cases available in the origninal test data set (not cross-validation test data set) .  We can expected that few of the test samples will be misclassified based on the  accuracy shown on the cross-validation data set.
 * 1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 
 * B  A  B  A  A  E  D  B  A  A  B  C  B  A  E  E  A  B  B  B 
 
@@ -109,4 +115,17 @@ accuracy
 predictRf <- predict(modFitRf, dfTest)
 predictRf
 ```
- 
+### Appendix
+* Stochastic Gradient Boosting Predictive models is fitted  to predict the manner/class type in which an exerise was completed
+* The results are predicted using the validation data set 
+* The results are compared using a confusionMatrix:  a cross-tabulation of observed and predicted classes with associated statistics.
+* The accuracy/overall agreement rate and Kappa are computed 
+```{r modelfittingappendix,  echo  =  TRUE}
+
+modFitGbm<- train(classe ~ ., data = dfPredict, method = "gbm")
+predictGbm <- predict(modFitGbm, dfValidate)
+confusionMatrix(dfValidate$classe, predictGbm)
+accuracy2 <- postResample(predictGbm, dfValidate$classe)
+accuracy2
+
+```
