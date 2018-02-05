@@ -3,8 +3,8 @@ title: 'Machine Learning: Course Project'
 author: "Jeremy Peters"
 date: "February 5, 2018"
 output:
-  pdf_document: default
   html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -105,7 +105,7 @@ plot(modFitRfvarImp, main = "Importance of Top 20 Variables", top = 20)
 ```
 
 ### Conclusions & Test Data Set Prediction
-* The Random Forest algorithm performed very well and gave the best result with an accuracy of 0.994 where accuracy is the proportion of correctly classified observations in the cross-validation test data set. The expected out-of-sample error rate is estimated at 0.006 (1 - accuracy) to represent the the expected misclassified observations in the test data set.
+* The Random Forest algorithm performed very well and gave the best result with an accuracy of 0.992 where accuracy is the proportion of correctly classified observations in the cross-validation test data set. The expected out-of-sample error rate is estimated at 0.008 (1 - accuracy) to represent the the expected misclassified observations in the test data set.
 * Therefore, the Random Forest predictive model is applied to the 20 test cases available in the origninal test data set (not cross-validation test data set) .  We can expected that few of the test samples will be misclassified based on the  accuracy shown on the cross-validation data set.
 * 1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 
 * B  A  B  A  A  E  D  B  A  A  B  C  B  A  E  E  A  B  B  B 
